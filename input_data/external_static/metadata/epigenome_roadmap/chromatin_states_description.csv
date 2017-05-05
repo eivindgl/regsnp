@@ -1,0 +1,16 @@
+state_number,name,description
+1,TssA,Active TSS
+2,TssAFlnk,Flanking Active TSS
+3,TxFlnk,Transcr. at gene 5' and 3'
+4,Tx,Strong transcription
+5,TxWk,Weak transcription
+6,EnhG,Genic enhancers
+7,Enh,Enhancers
+8,ZNF/Rpts,ZNF genes & repeats
+9,Het,Heterochromatin
+10,TssBiv,Bivalent/Poised TSS
+11,BivFlnk,Flanking Bivalent TSS/Enh
+12,EnhBiv,Bivalent Enhancer
+13,ReprPC,Repressed PolyComb
+14,ReprPCWk,Weak Repressed PolyComb
+15,Quies,Quiescent/Low

@@ -6,9 +6,6 @@ pacman::p_load(
   stringr
 )
 
-read_bedfile <- function(path) {
-}
-
 extract_name <- function(path) {
   name = basename(path)
   str_extract(name, '[^_]+')
@@ -47,4 +44,17 @@ df %>%
     max = max(coverage)
   )
     
+#
+# Coverage vs cell type category
+#
+meta <- read_csv('input_data/external_static/metadata/epigenome_roadmap/chromatin_state_meta.csv')
   
+df %>% 
+  filter(str_detect(state, 'Enh')) %>% 
+  inner_join(meta, by = c('sample' = 'eid')) %>%
+  group_by(group, name) %>% 
+  summarize(coverage = sum(coverage)) %>% 
+  ggplot() +
+  geom_boxplot(aes(group, coverage)) +
+  coord_flip()
+meta

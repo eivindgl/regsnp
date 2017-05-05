@@ -1,6 +1,4 @@
-Epigenome ID (EID),GROUP,Epigenome Mnemonic,Standardized Epigenome name,Epigenome name (from EDACC Release 9 directory),ANATOMY,TYPE
-,,,,,,
-,,,,,,
+eid,group,epigenome_Mnemonic,name,edacc9_name,anatomy,source
 E017,IMR90,LNG.IMR90,IMR90 fetal lung fibroblasts Cell Line,IMR90_Cell_Line,LUNG,CellLine
 E002,ESC,ESC.WA7,ES-WA7 Cells,ES-WA7_Cell_Line,ESC,PrimaryCulture
 E008,ESC,ESC.H9,H9 Cells,H9_Cell_Line,ESC,PrimaryCulture
