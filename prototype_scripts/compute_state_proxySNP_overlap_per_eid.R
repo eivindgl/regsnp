@@ -7,8 +7,6 @@ pacman::p_load(
   rtracklayer,
   GenomicRanges
 )
-e001 <- import.bed('input_data/external/epigenome_roadmap/states/E001_15_coreMarks_dense.bed.gz')
-e129 <- import.bed('input_data/external/epigenome_roadmap/states/E129_15_coreMarks_dense.bed.gz')
 
   
 # raggr webservice computes all proxy snps from a list of tag snps
@@ -68,26 +66,6 @@ open_states <- states_desc %>%
   filter(!str_detect(description, 'Weak transcription')) %>% 
   mutate(id_str = str_c(state_number, name, sep = '_')) %>% 
   `[[`('id_str')
-e001 %>%
-  subset(e001$name %in% open_states) %>% 
-  total_MB_coverage()
-e129 %>%
-  subset(e129$name %in% open_states) %>% 
-  total_MB_coverage()
-
-e001 %>% 
-  coverage_by_state()
-
-e129 %>% 
-  coverage_by_state()
-
-  
-x <- e001 #%>% 
-  head(1000)
-x %>% 
-  split(x$name) %>% 
-  countOverlaps(snps) %>% 
-  sum()
 
 extract_name <- function(path) {
   name = basename(path)
@@ -142,7 +120,7 @@ tagSNPs_per_state <- function(gr, experiment_name, snps, proxies_per_tag) {
     ungroup() %>% 
     inner_join(proxies_per_tag, by = 'tag_snp') %>% 
     mutate(eid = experiment_name) %>% 
-    dplyr::select(experiment_name, everything())
+    dplyr::select(eid, everything())
 }
 
 snps_weighted_per_state <-  local({
