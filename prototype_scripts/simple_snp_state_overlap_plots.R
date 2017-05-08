@@ -68,11 +68,24 @@ top_group_per_tag_snp <- edf %>%
 #  filter(!str_detect(group, 'Thymus')) %>% # did not improve overlap with ASE effects
   ungroup() %>% 
   group_by(tag_snp) %>% 
-  slice(which.max(score)) %>% 
-  ungroup()
+  summarise(n_over_05 = sum(score > 0.5)) %>% 
+  filter(n_over_05 < 2) %>%
+  dplyr::select(tag_snp) 
+  # slice(which.max(score)) %>% 
+  # ungroup()
+
+# It is potentially very interesting that T-cell specific tag_snps coincide
+# with the strongest ASE effects.
+# However, it is perhaps not too surprising that there is some overlap.
+#   - We have in total ~60 tag snps
+#   - We pick up ASE effects in 24 cis genes of 13 different tag_snps.
+#   - We find 12 tag_snps to be highly t-cell specific.
+#   - 5 tag snps overlap covering 9 genes.
+#     - 5 which are clearly heterozygous. 
+#     - 3 out of 4 remaining are obviously interesting.
+
 
 tcell_snps <- top_group_per_tag_snp %>% 
-  filter(score < 0.6) %>% 
   inner_join(tag_snps, by = 'tag_snp') %>% 
   dplyr::select(chrom, start, end, everything())
 tcell_snps
@@ -82,3 +95,7 @@ tcell_ase <- read_csv('input_data/external_static/potential_ASE_by_tag_snp.csv')
 tcell_ase %>% 
   inner_join(tcell_snps)
 tcell_snps
+tcell_ase %>% 
+  mutate(ratio  = heterozygous_tag_SNP / (heterozygous_tag_SNP + homozygous_tag_SNP)) %>% 
+  print(n = Inf)
+
