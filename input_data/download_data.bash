@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -u
 set -e
+shopt -s nullglob
 
 base_dir=external
 
@@ -18,4 +19,10 @@ for url_file in download_urls/*.txt ; do
             curl -o "$storage_path" "$url"
         fi
     done < $url_file
+done
+
+for url_gen in download_urls/*.py ; do
+    dstd=$base_dir/$(basename $url_gen .py)
+    mkdir -p "$dstd"
+    python $url_gen | ./download_urls.py --dst-dir $dstd
 done
