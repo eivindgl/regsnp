@@ -134,3 +134,9 @@ dir.create('out/prototype_scripts', recursive = TRUE, showWarnings = FALSE)
 snps_weighted_per_state %>% 
   write_csv('out/prototype_scripts/snp_state_count_by_exp.csv')
 
+map2_df(dfs, names(dfs), 
+        ~ .x %>% 
+          coverage_by_state %>% 
+          mutate(eid = .y) %>% 
+          dplyr::select(eid, everything())) %>% 
+  write_csv('out/prototype_scripts/cell_type_state_coverage.csv')
