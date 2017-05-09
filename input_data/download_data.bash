@@ -26,3 +26,8 @@ for url_gen in download_urls/*.py ; do
     mkdir -p "$dstd"
     python $url_gen | ./download_urls.py --dst-dir $dstd
 done
+
+for json in download_urls/*.json ; do
+    dstd=$base_dir/$(basename $json .json)
+  ./download_urls.py --input $json --dst-dir $dstd
+done
