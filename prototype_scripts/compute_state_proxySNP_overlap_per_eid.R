@@ -53,19 +53,7 @@ read_raggr <- purrr::compose(raggr_df_to_genomic_ranges, read_raggr_csv)
 snps <- read_raggr('input_data/external_static/CeD_proxy-SNPs_08_CEU.csv')
 seqlevelsStyle(snps) <- 'UCSC'
 
-str_detect_any_of <- function(needles, haystack) {
-  haystack <- tolower(haystack)
-  any(needles %>% map_lgl(~ str_detect(haystack, .)))
-}
 states_desc <- read_csv('input_data/external_static/metadata/epigenome_roadmap/chromatin_states_description.csv')
-states_desc
-
-is_active_chrom <- partial(str_detect_any_of, c('tss', 'enh', 'transcr'))
-open_states <- states_desc %>% 
-  filter(map_lgl(description, is_active_chrom)) %>% 
-  filter(!str_detect(description, 'Weak transcription')) %>% 
-  mutate(id_str = str_c(state_number, name, sep = '_')) %>% 
-  `[[`('id_str')
 
 extract_name <- function(path) {
   name = basename(path)
@@ -84,24 +72,6 @@ SNPs_per_state <- function(x, snps) {
     countOverlaps(snps)
 }
 
-# compute snps overlap with different state types.
-# does not take SNP LD into account.
-# so tag SNPs with lots of proxy SNPs will
-# contribute more to total score than other sites.
-# perhaps divide SNP score by number of proxy SNPs?
-snps_per_state <-  local({
-  f <- partial(SNPs_per_state, snps = snps)
-  x <- dfs %>% 
-    map(f) 
-  x %>% 
-    as_tibble() %>% 
-    mutate(state = names(x[[1]]),
-           state = str_replace(state, '^\\d+_', '')) %>% 
-    gather(sample, nSNPs, -state) %>% 
-    spread(state, nSNPs)
-})
-
-#
 # Weighted count
 # 
 proxies_per_tag <- tibble(tag_snp = snps$tag_snp) %>% 
