@@ -99,14 +99,35 @@ snps_weighted_per_state <-  local({
                snps = snps, proxies_per_tag = proxies_per_tag)
   map2_df(dfs, exp_names, f) 
 })
+sample_meta <- read_csv('input_data/external_static/metadata/epigenome_roadmap/chromatin_state_samples_meta.csv')
+snps_weighted_per_state
+sdf <- sample_meta %>% 
+  inner_join(snps_weighted_per_state) %>% 
+  mutate(source = 'epigenome') %>% 
+  dplyr::select(sample=epigenome_Mnemonic, group, n_overlapping, n_proxies, tag_snp, state, source, eid)
+dir.create('out/process/epigenome', recursive = TRUE, showWarnings = FALSE)
+sdf %>% 
+  write_csv('out/process/epigenome/state_CeD-SNP_overlap.csv')
+x <- sdf %>% 
+  filter(str_detect(state, 'EnhG?$')) %>% 
+  group_by(sample, tag_snp) %>% 
+  summarize(n_overlapping = sum(n_overlapping))
+sdf %>% 
+  dplyr::select(-state, -n_overlapping) %>% 
+  distinct() %>% 
+  inner_join(x) %>% 
+  write_csv('out/process/epigenome/Enhancer_CeD-SNP_overlap.csv')
 
-dir.create('out/prototype_scripts', recursive = TRUE, showWarnings = FALSE)
-snps_weighted_per_state %>% 
-  write_csv('out/prototype_scripts/snp_state_count_by_exp.csv')
-
-map2_df(dfs, names(dfs), 
+covdf <- map2_df(dfs, names(dfs), 
         ~ .x %>% 
           coverage_by_state %>% 
           mutate(eid = .y) %>% 
-          dplyr::select(eid, everything())) %>% 
-  write_csv('out/prototype_scripts/cell_type_state_coverage.csv')
+          dplyr::select(eid, everything()))
+covdf %>%  
+  write_csv('out/process/epigenome/cell_type_state_coverage.csv')
+
+covdf %>% 
+  filter(str_detect(state, 'EnhG?$')) %>% 
+  group_by(eid) %>% 
+  summarise(coverage_MB = sum(coverage_MB)) %>% 
+  write_csv('out/process/epigenome/cell_type_Enhancer_coverage.csv')

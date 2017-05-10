@@ -65,9 +65,9 @@ proxies_per_tag <- tibble(tag_snp = snps$tag_snp) %>%
 tagSNPs_per_experiment <- function(gr, experiment_name, snps, proxies_per_tag) {
   hits <- gr %>% 
     findOverlaps(snps)
-  tibble(experiment_name,
+  tibble(sample=experiment_name,
          tag_snp=snps$tag_snp[to(hits)]) %>% 
-    group_by(experiment_name, tag_snp) %>% 
+    group_by(sample, tag_snp) %>% 
     summarize(n_overlapping = length(tag_snp)) %>% 
     ungroup() %>% 
     inner_join(proxies_per_tag, by = 'tag_snp')
@@ -78,12 +78,14 @@ snps_weighted_per_exp <-  local({
   f <- partial(tagSNPs_per_experiment, 
                snps = snps, proxies_per_tag = proxies_per_tag)
   map2_df(dfs, exp_names, f) 
-})
+}) %>% 
+  mutate(source = 'gsTCC', group='gsTCC') # general fields
 
 dir.create('out/process/gsTCC', recursive = TRUE, showWarnings = FALSE)
 snps_weighted_per_exp %>% 
   write_csv('out/process/gsTCC/experiment_CeD-SNP_overlap.csv')
 
 dnase_exp_cov <- map_dbl(dfs, total_MB_coverage)
-tibble(experiment_name = names(dnase_exp_cov), coverage_MB = dnase_exp_cov) %>% 
+tibble(sample = names(dnase_exp_cov), coverage_MB = dnase_exp_cov,
+       group = 'gsTCC', source = 'gsTCC') %>% 
   write_csv('out/process/gsTCC/cell_type_coverage.csv')

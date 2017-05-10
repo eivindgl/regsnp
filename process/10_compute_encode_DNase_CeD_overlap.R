@@ -53,27 +53,31 @@ paths <- list.files('input_data/external/encode_dnase', full.names = TRUE)
 sample_names <- paths %>% map_chr(extract_name)
 extraCols_narrowPeak <- c(signalValue = "numeric", pValue = "numeric",
                           qValue = "numeric", peak = "integer")
-dfs <- paths %>% 
-  map(partial(import.bed, extraCols = extraCols_narrowPeak)) %>% 
-  set_names(nm = sample_names)
 
-#
-# Weighted count
-# 
 proxies_per_tag <- tibble(tag_snp = snps$tag_snp) %>% 
   group_by(tag_snp) %>% 
   summarize(n_proxies = length(tag_snp))
 
+#
+# Weighted count
+# 
+
 tagSNPs_per_experiment <- function(gr, experiment_name, snps, proxies_per_tag) {
   hits <- gr %>% 
     findOverlaps(snps)
-  tibble(experiment_name,
+  tibble(sample = experiment_name,
          tag_snp=snps$tag_snp[to(hits)]) %>% 
-    group_by(experiment_name, tag_snp) %>% 
+    group_by(sample, tag_snp) %>% 
     summarize(n_overlapping = length(tag_snp)) %>% 
     ungroup() %>% 
-    inner_join(proxies_per_tag, by = 'tag_snp')
+    inner_join(proxies_per_tag, by = 'tag_snp') %>% 
+    mutate(source = 'encode', group = if_else(str_detect(sample, '^u_'),
+                                              'uniform', 'single'))
 }
+
+dfs <- paths %>% 
+  map(partial(import.bed, extraCols = extraCols_narrowPeak)) %>% 
+  set_names(nm = sample_names)
 
 snps_weighted_per_exp <-  local({
   exp_names <- names(dfs)
@@ -87,5 +91,7 @@ snps_weighted_per_exp %>%
   write_csv('out/process/encode/experiment_CeD-SNP_overlap.csv')
 
 dnase_exp_cov <- map_dbl(dfs, total_MB_coverage)
-tibble(experiment_name = names(dnase_exp_cov), coverage_MB = dnase_exp_cov) %>% 
+tibble(sample = names(dnase_exp_cov), 
+       coverage_MB = dnase_exp_cov, source = 'encode',
+       group = if_else(str_detect(sample, '^u_'), 'uniform', 'single')) %>%
   write_csv('out/process/encode/cell_type_coverage.csv')
