@@ -1,6 +1,5 @@
 [
   {
-    "foldername": "gsTCC_DNase",
     "url": "https://www.dropbox.com/s/fpc9yjemgicqw39/gsTCC_DNase.tar.gz?dl=1",
     "description": "DNase peaks for gluten specific T-cell clones",
     "compressed_folder": true

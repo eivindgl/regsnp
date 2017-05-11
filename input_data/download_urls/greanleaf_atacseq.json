@@ -1,0 +1,7 @@
+[
+    {
+        "url": "https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE60682&format=file",
+        "description": "ATAC-seq peaks from primary cells",
+        "compressed_folder": true
+    }
+]
