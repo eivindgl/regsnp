@@ -106,10 +106,20 @@ sdf <- sample_meta %>%
   mutate(source = 'epigenome') %>% 
   dplyr::select(sample=epigenome_Mnemonic, group, n_overlapping, n_proxies, tag_snp, state, source, eid)
 dir.create('out/process/epigenome', recursive = TRUE, showWarnings = FALSE)
+
+filter_enh <- function(x) {
+  x %>% 
+    filter(state == '7_Enh')
+  
+}
+
+sdf <- sdf %>% 
+  mutate(cell_category = ifelse(group == 'Blood & T-cell', 'T-cell', 'unspecified'))
+
 sdf %>% 
   write_csv('out/process/epigenome/state_CeD-SNP_overlap.csv')
 x <- sdf %>% 
-  filter(str_detect(state, 'EnhG?$')) %>% 
+  filter_enh() %>% 
   group_by(sample, tag_snp) %>% 
   summarize(n_overlapping = sum(n_overlapping))
 sdf %>% 
@@ -123,11 +133,18 @@ covdf <- map2_df(dfs, names(dfs),
           coverage_by_state %>% 
           mutate(eid = .y) %>% 
           dplyr::select(eid, everything()))
+covdf <- covdf %>% 
+  inner_join(sample_meta) %>% 
+  mutate(source = 'epigenome') %>% 
+  dplyr::select(sample=epigenome_Mnemonic, coverage_MB, group, state, source, eid) %>% 
+  mutate(cell_category = ifelse(group == 'Blood & T-cell', 'T-cell', 'unspecified'))
+
 covdf %>%  
   write_csv('out/process/epigenome/cell_type_state_coverage.csv')
 
-covdf %>% 
-  filter(str_detect(state, 'EnhG?$')) %>% 
-  group_by(eid) %>% 
-  summarise(coverage_MB = sum(coverage_MB)) %>% 
+enh_covdf <- covdf %>% 
+  filter_enh() %>% 
+  group_by(sample, group, source, eid, cell_category) %>% 
+  summarise(coverage_MB = sum(coverage_MB))
+enh_covdf %>% 
   write_csv('out/process/epigenome/cell_type_Enhancer_coverage.csv')

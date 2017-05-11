@@ -79,7 +79,7 @@ snps_weighted_per_exp <-  local({
                snps = snps, proxies_per_tag = proxies_per_tag)
   map2_df(dfs, exp_names, f) 
 }) %>% 
-  mutate(source = 'gsTCC', group='gsTCC') # general fields
+  mutate(source = 'gsTCC', group='gsTCC', cell_category = 'T-cell') # general fields
 
 dir.create('out/process/gsTCC', recursive = TRUE, showWarnings = FALSE)
 snps_weighted_per_exp %>% 
@@ -87,5 +87,5 @@ snps_weighted_per_exp %>%
 
 dnase_exp_cov <- map_dbl(dfs, total_MB_coverage)
 tibble(sample = names(dnase_exp_cov), coverage_MB = dnase_exp_cov,
-       group = 'gsTCC', source = 'gsTCC') %>% 
+       group = 'gsTCC', source = 'gsTCC', cell_category = 'T-cell') %>% 
   write_csv('out/process/gsTCC/cell_type_coverage.csv')
