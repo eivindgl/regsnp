@@ -3,49 +3,69 @@ pacman::p_load(
   stringr,
   forcats
 )
-snps_weighted_per_state <- read_csv('out/prototype_scripts/snp_state_count_by_exp.csv')
-sample_meta <- read_csv('input_data/external_static/metadata/epigenome_roadmap/chromatin_state_samples_meta.csv')
+snps_weighted <- read_csv('out/process/20_combined_counts.csv')
+cell_coverage <- read_csv('out/process/20_combined_coverage.csv')
 
-eid_counts <- snps_weighted_per_state %>% 
-  filter(str_detect(state, 'EnhG?$')) %>% 
-  distinct(eid, tag_snp) %>% 
-  group_by(eid) %>% 
-  count() %>% 
-  inner_join(sample_meta) %>% 
-  arrange(desc(n)) %>% 
-  mutate(group= fct_reorder(group, n)) %>% 
-  filter(group == 'Blood & T-cell')
-eid_counts %>% 
-  dplyr::select(-name,-edacc9_name) %>% 
-  arrange(n)
+proxy_counts <- snps_weighted %>% 
+  group_by(sample) %>% 
+  summarise(nSNPs = sum(n_overlapping)) %>% 
+  arrange(desc(nSNPs))
 
+tag_counts <- snps_weighted %>% 
+  distinct(sample, tag_snp) %>% 
+  count(sample, sort = TRUE) %>% 
+  dplyr::rename(nTagSNPs = n)
 
-edf <- local({
-  x <- snps_weighted_per_state %>% 
-    filter(str_detect(state, 'EnhG?$')) %>%
-    filter(eid %in% eid_counts$eid) %>% 
-    group_by(eid, tag_snp, n_proxies) %>% 
-    summarise(n_overlapping = sum(n_overlapping))
-  x <- sample_meta %>% 
-    dplyr::rename(idname=epigenome_Mnemonic) %>% 
-    distinct(eid, idname) %>% 
-    inner_join(x, by = 'eid')
-  # select max number of SNPs overlapped by any track per tag_snp
-  # best_overlap <- x %>% 
-  #   group_by(tag_snp, idname) %>% 
-  #   summarise(n_overlapping = median(n_overlapping)) %>% 
-  #   summarize(max_overlap = max(n_overlapping))
-  x %>% 
-    # inner_join(best_overlap, by = 'tag_snp') %>% 
-    mutate(score = n_overlapping / n_proxies)  
-})
+counts_and_cov <- cell_coverage %>% 
+  inner_join(tag_counts) %>% 
+  mutate(tag_per_mb = nTagSNPs / coverage_MB)
 
-edf %>% 
-  ggplot() +
-  geom_jitter(aes(eid, score, color = idname))
+proxy_counts_and_cov <- cell_coverage %>% 
+  inner_join(proxy_counts)
 
-edf %>% 
-  ggplot() +
-  geom_tile(aes(tag_snp, idname, fill = score, color = 'white')) +
-  scale_fill_gradient(low = 'white', high = 'steelblue') +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+counts_and_cov %>% 
+  ggplot(aes(coverage_MB, nTagSNPs)) +
+  geom_jitter(aes(color = source), size = 3)
+
+#
+# Plot number of proxy snippe overlapped by track by track size.
+# Regress on T-cells and compute R^2 for noverlaps given T-cell genome coverage.
+#
+pm <- proxy_counts_and_cov %>% 
+  filter(cell_category == 'T-cell') %>% 
+  lm(nSNPs ~ coverage_MB, data = .)
+
+p <- proxy_counts_and_cov %>% 
+  #filter(source != 'epigenome') %>% 
+  # filter(!str_detect(group, '[TB]-cell')) %>%
+  # mutate(is_tcell = str_detect(group, 'T-cell')) %>% 
+  ggplot(aes(coverage_MB, nSNPs)) +
+  geom_point(aes(shape = source, color = cell_category), size = 2) +
+  geom_smooth(method = 'lm', se = FALSE, data = filter(proxy_counts_and_cov, cell_category == 'T-cell'))
+p + 
+  geom_text(aes(50, 210), check_overlap = TRUE, label = sprintf('R^2 is %.3f', summary(pm)$r.square)) +
+  labs(title = 'CeD proxy SNP overlap by track coverage',
+       x = 'Coverage (MB)',
+       y = '#CeD risk SNPs')
+  ggsave('out/prototype_scripts/proxy_SNPs_overlap_by_coverage.png')
+
+#
+# gsTCC display a good ratio of SNPs vs genome coverage in the plot above,
+# but it looks to be explained by a simple regression nSNPs by coverage on t-cells.
+#
+
+# tdf <- snps_weighted %>% 
+#   filter(cell_category == 'T-cell') %>% 
+#   filter(source == 'encode')
+# 
+# tdf <- tdf %>% group_by(tag_snp) %>% 
+#   summarise(max_overlapping = max(n_overlapping)) %>% 
+#   inner_join(tdf) %>% 
+#   mutate(score = if_else(max_overlapping == 0, 0, n_overlapping / max_overlapping))
+# 
+# tdf %>% 
+#   ggplot() +
+#   geom_tile(aes(tag_snp, sample, fill = score, color = 'white')) +
+#   scale_fill_gradient(low = 'white', high = 'steelblue') +
+#   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+# 
